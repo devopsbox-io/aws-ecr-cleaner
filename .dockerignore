@@ -1,0 +1,6 @@
+.git
+.idea
+aws-ecr-cleaner
+build
+docker-compose.yaml
+Dockerfile

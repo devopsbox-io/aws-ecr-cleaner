@@ -1,0 +1,10 @@
+version: '3'
+services:
+  aws-ecr-cleaner:
+    build:
+      context: .
+    volumes:
+    - ~/.aws:/root/.aws:ro
+    environment:
+      AWS_PROFILE: $AWS_PROFILE
+      BOX_LOG: DEBUG
