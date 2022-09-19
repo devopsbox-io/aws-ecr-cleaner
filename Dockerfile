@@ -4,6 +4,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     upx \
     && rm -rf /var/lib/apt/lists/*
 
+COPY --from=golangci/golangci-lint:v1.49.0 /usr/bin/golangci-lint /usr/local/bin/golangci-lint
+
 WORKDIR /app
 
 COPY go.mod .
@@ -11,6 +13,9 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
+
+RUN go test -cover ./...
+RUN golangci-lint run
 
 RUN go build -o /usr/local/bin/aws-ecr-cleaner .
 
