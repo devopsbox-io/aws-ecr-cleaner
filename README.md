@@ -10,7 +10,7 @@ policies, but they lack some features - mainly they **don't check if an images i
 **dangerous** - for example if your ECS Service can't find an image when scaling out, it would fail to start your app.
 That's why we decided to write a Lambda function that will check periodically for old, unused images.
 
-## How it works?
+## How does it work?
 
 The first step is scanning for images that are currently in use and putting the set in memory:
 
@@ -43,20 +43,30 @@ use `map[string]struct{}` to mitigate the risk.
 ECR cleaner is designed to be used as an AWS Lambda container image. The Lambda can be triggered by AWS EventBridge
 Schedule (we use `cron(0 0 * * ? *)`)
 
-You can either use our docker image `ghcr.io/devopsbox-io/aws-ecr-cleaner:v0.1.0` (replace the tag with another version
-when appropriate) or build your own image and download the binary in your Dockerfile (Set the `ECR_CLEANER_SHA256`
+You can use our docker image `ghcr.io/devopsbox-io/aws-ecr-cleaner:v0.1.0` (replace the tag with another version when
+appropriate) or build your own image downloading the binary in your Dockerfile (Set the `ECR_CLEANER_SHA256`
 and `ECR_CLEANER_VERSION` variables appropriately):
 
 ```dockerfile
-ENV ECR_CLEANER_SHA256=qwertyu123qeqeasdasdae1231dasdasfsadfa1231231dasdasdadasda123131 \
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV ECR_CLEANER_SHA256=2c713721af30c4c9380324816bd122f469f0780abc9f86fff62e375d45c61272 \
     ECR_CLEANER_VERSION=0.1.0
 RUN curl -L https://github.com/devopsbox-io/aws-ecr-cleaner/releases/download/v${ECR_CLEANER_VERSION}/aws-ecr-cleaner-${ECR_CLEANER_VERSION}-linux-amd64 \
         -o /usr/local/bin/aws-ecr-cleaner && \
     echo "${ECR_CLEANER_SHA256} /usr/local/bin/aws-ecr-cleaner" | sha256sum --check && \
     chmod +x /usr/local/bin/aws-ecr-cleaner
+
+CMD [ "/usr/local/bin/aws-ecr-cleaner" ]
 ```
 
-Set `aws-ecr-cleaner` as your `ENTRYPOINT` in the Lambda `Container image overrides` settings.
+Either way, **you have to push ECR cleaner image to an AWS ECR repository in your AWS account before using it in
+Lambda**.
 
 The Lambda IAM execution role will need a usual `AWSLambdaBasicExecutionRole` policy and additionally a policy with the
 following permissions:
@@ -94,9 +104,9 @@ following permissions:
 #### Environment variables
 
 - `DEFAULT_KEEP_DAYS` - integer in days, default `30`; ECR cleaner will not remove images younger than value of this
-environment variable
+  environment variable
 - `DRY_RUN` - boolean, default `true`; if set to `false`, ECR cleaner will start removing images, any other value means
-that ECR cleaner will only put a `Found unused image, should be removed` line to the logs
+  that ECR cleaner will only put a `Found unused image, should be removed` line to the logs
 
 #### Repository tags
 
