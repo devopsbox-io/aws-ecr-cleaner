@@ -5,7 +5,7 @@ Removes old, unused images from AWS Elastic Container Registry (ECR).
 ## Why have we built it?
 
 The number and size of images in your docker registry grow over time and can cost a significant amount of money. It is a
-good practice to have a cleaning policy of unused, old images. There are ready-to-use solutions like ECR Lifecycle
+good practice to have a cleaning policy of unused, old images. There are ready-to-use solutions like ECR lifecycle
 policies, but they lack some features - mainly they **don't check if an images is still in use**. We consider using them
 **dangerous** - for example if your ECS Service can't find an image when scaling out, it would fail to start your app.
 That's why we decided to write a Lambda function that will check periodically for old, unused images.
