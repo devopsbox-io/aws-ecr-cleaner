@@ -7,9 +7,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	boxaws "github.com/devopsbox-io/aws-ecr-cleaner/internal/pkg/aws"
 	gerrors "github.com/pkg/errors"
 )
+
+const AppRunnerRegionsSsmParametersPath = "/aws/service/global-infrastructure/services/apprunner/regions"
 
 type usedImages struct {
 	awsProvider *boxaws.Provider
@@ -28,9 +31,16 @@ func (u *usedImages) getImages() (map[string]struct{}, error) {
 		return nil, gerrors.Wrapf(err, "error getting images used by Lambda")
 	}
 
-	err = u.getAppRunnerUsedImages(imageSet)
+	appRunnerEnabled, err := u.checkAppRunnerEnabledInRegion()
 	if err != nil {
-		return nil, gerrors.Wrapf(err, "error getting images used by App Runner")
+		return nil, gerrors.Wrapf(err, "error checking if App Runner is enabled in region")
+	}
+
+	if appRunnerEnabled {
+		err = u.getAppRunnerUsedImages(imageSet)
+		if err != nil {
+			return nil, gerrors.Wrapf(err, "error getting images used by App Runner")
+		}
 	}
 
 	return imageSet, nil
@@ -165,4 +175,30 @@ func (u *usedImages) getAppRunnerUsedImages(imageSet map[string]struct{}) error 
 	}
 
 	return nil
+}
+
+func (u *usedImages) checkAppRunnerEnabledInRegion() (bool, error) {
+	ssmPaginators := u.awsProvider.SsmPaginators
+	awsRegion := u.awsProvider.Region
+
+	getParametersByPathPaginator := ssmPaginators.NewGetParametersByPathPaginator(&ssm.GetParametersByPathInput{
+		Path: aws.String(AppRunnerRegionsSsmParametersPath),
+	})
+
+	for getParametersByPathPaginator.HasMorePages() {
+		page, err := getParametersByPathPaginator.NextPage(context.TODO())
+		if err != nil {
+			return false, gerrors.Wrapf(err, "cannot get get ssm parameters by path page")
+		}
+
+		for _, parameter := range page.Parameters {
+			supportedRegion := *parameter.Value
+
+			if awsRegion == supportedRegion {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
 }

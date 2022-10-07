@@ -1,26 +1,26 @@
 package aws
 
-import gerrors "github.com/pkg/errors"
+import (
+	"context"
+	"github.com/aws/aws-sdk-go-v2/config"
+	gerrors "github.com/pkg/errors"
+)
 
 func NewProvider() (*Provider, error) {
-	ecsClient, err := newEcsClient()
+	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		return nil, gerrors.Wrapf(err, "error creating AWS ECS client")
-	}
-	lambdaClient, err := newLambdaClient()
-	if err != nil {
-		return nil, gerrors.Wrapf(err, "error creating AWS Lambda client")
-	}
-	appRunnerClient, err := newAppRunnerClient()
-	if err != nil {
-		return nil, gerrors.Wrapf(err, "error creating AWS App Runner client")
-	}
-	ecrClient, err := newEcrClient()
-	if err != nil {
-		return nil, gerrors.Wrapf(err, "error creating AWS ECR client")
+		return nil, gerrors.Wrapf(err, "cannot load aws config")
 	}
 
+	ecsClient := newEcsClient(cfg)
+	lambdaClient := newLambdaClient(cfg)
+	appRunnerClient := newAppRunnerClient(cfg)
+	ecrClient := newEcrClient(cfg)
+	ssmClient := newSsmClient(cfg)
+
 	return &Provider{
+		Region: cfg.Region,
+
 		EcsClient:           ecsClient,
 		EcsPaginators:       &ecsPaginators{client: ecsClient},
 		LambdaClient:        lambdaClient,
@@ -29,10 +29,13 @@ func NewProvider() (*Provider, error) {
 		AppRunnerPaginators: &appRunnerPaginators{client: appRunnerClient},
 		EcrClient:           ecrClient,
 		EcrPaginators:       &ecrPaginators{client: ecrClient},
+		SsmPaginators:       &ssmPaginators{client: ssmClient},
 	}, nil
 }
 
 type Provider struct {
+	Region string
+
 	EcsClient     EcsClient
 	EcsPaginators EcsPaginators
 
@@ -44,4 +47,6 @@ type Provider struct {
 
 	EcrClient     EcrClient
 	EcrPaginators EcrPaginators
+
+	SsmPaginators SsmPaginators
 }

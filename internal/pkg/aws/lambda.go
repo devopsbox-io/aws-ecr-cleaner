@@ -2,20 +2,12 @@ package aws
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	gerrors "github.com/pkg/errors"
 )
 
-func newLambdaClient() (*lambda.Client, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		return nil, gerrors.Wrapf(err, "cannot load aws config")
-	}
-
-	client := lambda.NewFromConfig(cfg)
-
-	return client, nil
+func newLambdaClient(cfg aws.Config) *lambda.Client {
+	return lambda.NewFromConfig(cfg)
 }
 
 type LambdaClient interface {

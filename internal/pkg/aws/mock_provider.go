@@ -11,9 +11,12 @@ func NewMockProvider(ctrl *gomock.Controller) *MockProvider {
 	mockAppRunnerPaginators := NewMockAppRunnerPaginators(ctrl)
 	mockEcrClient := NewMockEcrClient(ctrl)
 	mockEcrPaginators := NewMockEcrPaginators(ctrl)
+	mockSsmPaginators := NewMockSsmPaginators(ctrl)
 
 	return &MockProvider{
 		Provider: &Provider{
+			Region: "mock-aws-region",
+
 			EcsClient:           mockEcsClient,
 			EcsPaginators:       mockEcsPaginators,
 			LambdaClient:        mockLambdaClient,
@@ -22,6 +25,7 @@ func NewMockProvider(ctrl *gomock.Controller) *MockProvider {
 			AppRunnerPaginators: mockAppRunnerPaginators,
 			EcrClient:           mockEcrClient,
 			EcrPaginators:       mockEcrPaginators,
+			SsmPaginators:       mockSsmPaginators,
 		},
 		MockEcsClient:           mockEcsClient,
 		MockEcsPaginators:       mockEcsPaginators,
@@ -31,6 +35,7 @@ func NewMockProvider(ctrl *gomock.Controller) *MockProvider {
 		MockAppRunnerPaginators: mockAppRunnerPaginators,
 		MockEcrClient:           mockEcrClient,
 		MockEcrPaginators:       mockEcrPaginators,
+		MockSsmPaginators:       mockSsmPaginators,
 	}
 }
 
@@ -45,4 +50,5 @@ type MockProvider struct {
 	MockAppRunnerPaginators *MockAppRunnerPaginators
 	MockEcrClient           *MockEcrClient
 	MockEcrPaginators       *MockEcrPaginators
+	MockSsmPaginators       *MockSsmPaginators
 }
