@@ -41,6 +41,8 @@ func (u *usedImages) getImages() (map[string]struct{}, error) {
 		if err != nil {
 			return nil, gerrors.Wrapf(err, "error getting images used by App Runner")
 		}
+	} else {
+		logger.Info("App Runner not available in this region", "region", u.awsProvider.Region)
 	}
 
 	return imageSet, nil
