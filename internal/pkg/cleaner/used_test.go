@@ -207,6 +207,32 @@ func TestAppRunnerNotAvailable(t *testing.T) {
 	}
 }
 
+func TestEcsListServicesEmptyResult(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	mockAwsProvider := boxaws.NewMockProvider(ctrl)
+
+	mockSsm(ctrl, mockAwsProvider, [][]string{}, true)
+
+	mockEcs(ctrl, mockAwsProvider, []map[string][]map[string]string{
+		{
+			"cluster1": {
+				{},
+			},
+		},
+	})
+
+	mockLambda(ctrl, mockAwsProvider, []map[string]lambdaMockResult{})
+
+	_, err := (&usedImages{
+		awsProvider: mockAwsProvider.Provider,
+	}).getImages()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func mockSsm(
 	ctrl *gomock.Controller,
 	mockAwsProvider *boxaws.MockProvider,
@@ -281,27 +307,29 @@ func mockEcs(ctrl *gomock.Controller, mockAwsProvider *boxaws.MockProvider, mock
 					ServiceArns: serviceArns,
 				}, nil)
 
-				mockAwsProvider.MockEcsClient.EXPECT().DescribeServices(gomock.Any(), &ecs.DescribeServicesInput{
-					Services: serviceArns,
-					Cluster:  aws.String(clusterArn),
-				}).Return(&ecs.DescribeServicesOutput{
-					Services: ecsServices,
-				}, nil)
+				if len(serviceArns) > 0 {
+					mockAwsProvider.MockEcsClient.EXPECT().DescribeServices(gomock.Any(), &ecs.DescribeServicesInput{
+						Services: serviceArns,
+						Cluster:  aws.String(clusterArn),
+					}).Return(&ecs.DescribeServicesOutput{
+						Services: ecsServices,
+					}, nil)
 
-				for _, ecsService := range ecsServices {
-					image := listServicesPage[*ecsService.ServiceName]
+					for _, ecsService := range ecsServices {
+						image := listServicesPage[*ecsService.ServiceName]
 
-					mockAwsProvider.MockEcsClient.EXPECT().DescribeTaskDefinition(gomock.Any(), &ecs.DescribeTaskDefinitionInput{
-						TaskDefinition: ecsService.TaskDefinition,
-					}).Return(&ecs.DescribeTaskDefinitionOutput{
-						TaskDefinition: &ecstypes.TaskDefinition{
-							ContainerDefinitions: []ecstypes.ContainerDefinition{
-								{
-									Image: aws.String(image),
+						mockAwsProvider.MockEcsClient.EXPECT().DescribeTaskDefinition(gomock.Any(), &ecs.DescribeTaskDefinitionInput{
+							TaskDefinition: ecsService.TaskDefinition,
+						}).Return(&ecs.DescribeTaskDefinitionOutput{
+							TaskDefinition: &ecstypes.TaskDefinition{
+								ContainerDefinitions: []ecstypes.ContainerDefinition{
+									{
+										Image: aws.String(image),
+									},
 								},
 							},
-						},
-					}, nil)
+						}, nil)
+					}
 				}
 			}
 			mockEcsListServicesPaginator.EXPECT().HasMorePages().Return(false)
