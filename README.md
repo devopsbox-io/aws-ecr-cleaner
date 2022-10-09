@@ -93,6 +93,15 @@ following permissions:
       "Resource": [
         "*"
       ]
+    },
+    {
+      "Action": [
+        "ssm:GetParametersByPath"
+      ],
+      "Effect": "Allow",
+      "Resource": [
+        "arn:aws:ssm:*::parameter/aws/service/global-infrastructure/services/apprunner/regions"
+      ]
     }
   ],
   "Version": "2012-10-17"
