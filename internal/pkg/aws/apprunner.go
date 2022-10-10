@@ -2,20 +2,12 @@ package aws
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apprunner"
-	gerrors "github.com/pkg/errors"
 )
 
-func newAppRunnerClient() (*apprunner.Client, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		return nil, gerrors.Wrapf(err, "cannot load aws config")
-	}
-
-	client := apprunner.NewFromConfig(cfg)
-
-	return client, nil
+func newAppRunnerClient(cfg aws.Config) *apprunner.Client {
+	return apprunner.NewFromConfig(cfg)
 }
 
 type AppRunnerClient interface {

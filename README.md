@@ -5,7 +5,7 @@ Removes old, unused images from AWS Elastic Container Registry (ECR).
 ## Why have we built it?
 
 The number and size of images in your docker registry grow over time and can cost a significant amount of money. It is a
-good practice to have a cleaning policy of unused, old images. There are ready-to-use solutions like ECR Lifecycle
+good practice to have a cleaning policy of unused, old images. There are ready-to-use solutions like ECR lifecycle
 policies, but they lack some features - mainly they **don't check if an images is still in use**. We consider using them
 **dangerous** - for example if your ECS Service can't find an image when scaling out, it would fail to start your app.
 That's why we decided to write a Lambda function that will check periodically for old, unused images.
@@ -93,6 +93,15 @@ following permissions:
       "Resource": [
         "*"
       ]
+    },
+    {
+      "Action": [
+        "ssm:GetParametersByPath"
+      ],
+      "Effect": "Allow",
+      "Resource": [
+        "arn:aws:ssm:*::parameter/aws/service/global-infrastructure/services/apprunner/regions"
+      ]
     }
   ],
   "Version": "2012-10-17"
@@ -127,6 +136,7 @@ mockgen -source=internal/pkg/aws/apprunner.go -destination=internal/pkg/aws/appr
 mockgen -source=internal/pkg/aws/ecr.go -destination=internal/pkg/aws/ecr_mock.go -package=aws
 mockgen -source=internal/pkg/aws/ecs.go -destination=internal/pkg/aws/ecs_mock.go -package=aws
 mockgen -source=internal/pkg/aws/lambda.go -destination=internal/pkg/aws/lambda_mock.go -package=aws
+mockgen -source=internal/pkg/aws/ssm.go -destination=internal/pkg/aws/ssm_mock.go -package=aws
 ```
 
 ### Running unit tests with coverage

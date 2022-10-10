@@ -9,6 +9,8 @@ import (
 	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	ssmtypes "github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	"github.com/aws/smithy-go/ptr"
 	boxaws "github.com/devopsbox-io/aws-ecr-cleaner/internal/pkg/aws"
 	"github.com/golang/mock/gomock"
@@ -21,6 +23,15 @@ func TestGetUsedImages(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	mockAwsProvider := boxaws.NewMockProvider(ctrl)
+
+	mockSsm(ctrl, mockAwsProvider, [][]string{
+		{
+			"region1",
+		},
+		{
+			"mock-aws-region",
+		},
+	}, false)
 
 	mockEcs(ctrl, mockAwsProvider, []map[string][]map[string]string{
 		{
@@ -141,6 +152,88 @@ func TestGetUsedImages(t *testing.T) {
 	)
 	if diff != "" {
 		t.Error(diff)
+	}
+}
+
+func TestAppRunnerNotAvailable(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	mockAwsProvider := boxaws.NewMockProvider(ctrl)
+
+	mockSsm(ctrl, mockAwsProvider, [][]string{
+		{
+			"region2",
+		},
+	}, true)
+
+	mockEcs(ctrl, mockAwsProvider, []map[string][]map[string]string{
+		{
+			"cluster1": {
+				{
+					"ecsService1": "image1:v1",
+				},
+			},
+		},
+	})
+
+	mockLambda(ctrl, mockAwsProvider, []map[string]lambdaMockResult{
+		{
+			"lambda1": {
+				image:       ptr.String("image2:v1"),
+				packageType: lambdatypes.PackageTypeImage,
+			},
+		},
+	})
+
+	expectedImages := map[string]struct{}{
+		"image1:v1": {},
+		"image2:v1": {},
+	}
+
+	images, err := (&usedImages{
+		awsProvider: mockAwsProvider.Provider,
+	}).getImages()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	diff := cmp.Diff(
+		expectedImages,
+		images,
+	)
+	if diff != "" {
+		t.Error(diff)
+	}
+}
+
+func mockSsm(
+	ctrl *gomock.Controller,
+	mockAwsProvider *boxaws.MockProvider,
+	mockResult [][]string,
+	expectSsmGetParametersByPathPaginatorAllPages bool,
+) {
+
+	mockSsmGetParametersByPathPaginator := boxaws.NewMockSsmGetParametersByPathPaginator(ctrl)
+	mockAwsProvider.MockSsmPaginators.EXPECT().NewGetParametersByPathPaginator(gomock.Any()).Return(mockSsmGetParametersByPathPaginator)
+
+	for _, getParametersByPathPage := range mockResult {
+		mockSsmGetParametersByPathPaginator.EXPECT().HasMorePages().Return(true)
+
+		parameters := make([]ssmtypes.Parameter, len(getParametersByPathPage))
+
+		for i, parameterValue := range getParametersByPathPage {
+			parameters[i] = ssmtypes.Parameter{
+				Value: aws.String(parameterValue),
+			}
+		}
+
+		mockSsmGetParametersByPathPaginator.EXPECT().NextPage(gomock.Any()).Return(&ssm.GetParametersByPathOutput{
+			Parameters: parameters,
+		}, nil)
+	}
+	if expectSsmGetParametersByPathPaginatorAllPages {
+		mockSsmGetParametersByPathPaginator.EXPECT().HasMorePages().Return(false)
 	}
 }
 

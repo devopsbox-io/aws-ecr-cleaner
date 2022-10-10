@@ -2,20 +2,12 @@ package aws
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
-	gerrors "github.com/pkg/errors"
 )
 
-func newEcrClient() (*ecr.Client, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		return nil, gerrors.Wrapf(err, "cannot load aws config")
-	}
-
-	client := ecr.NewFromConfig(cfg)
-
-	return client, nil
+func newEcrClient(cfg aws.Config) *ecr.Client {
+	return ecr.NewFromConfig(cfg)
 }
 
 type EcrClient interface {

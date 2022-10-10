@@ -513,6 +513,12 @@ func mockUsedImages(ctrl *gomock.Controller, mockAwsProvider *boxaws.MockProvide
 		services[fmt.Sprintf("%vService", usedImage)] = usedImage
 	}
 
+	mockSsm(ctrl, mockAwsProvider, [][]string{
+		{
+			"mock-aws-region",
+		},
+	}, false)
+
 	mockEcs(ctrl, mockAwsProvider, []map[string][]map[string]string{
 		{
 			"cluster1": {
