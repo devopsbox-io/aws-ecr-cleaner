@@ -71,38 +71,41 @@ func (u *usedImages) getEcsUsedImages(imageSet map[string]struct{}) error {
 					return gerrors.Wrapf(err, "cannot get list ECS services page")
 				}
 
-				describeServicesOutput, err :=
-					ecsClient.DescribeServices(context.TODO(), &ecs.DescribeServicesInput{
-						Services: listServicesPage.ServiceArns,
-						Cluster:  aws.String(clusterArn),
-					})
-				if err != nil {
-					return gerrors.Wrapf(err, "cannot describe ECS services")
-				}
+				if len(listServicesPage.ServiceArns) > 0 {
 
-				for _, service := range describeServicesOutput.Services {
-
-					describeTaskDefinitionOutput, err :=
-						ecsClient.DescribeTaskDefinition(context.TODO(), &ecs.DescribeTaskDefinitionInput{
-							TaskDefinition: service.TaskDefinition,
+					describeServicesOutput, err :=
+						ecsClient.DescribeServices(context.TODO(), &ecs.DescribeServicesInput{
+							Services: listServicesPage.ServiceArns,
+							Cluster:  aws.String(clusterArn),
 						})
 					if err != nil {
-						return gerrors.Wrapf(err, "cannot describe ECS task definitions")
+						return gerrors.Wrapf(err, "cannot describe ECS services")
 					}
 
-					for _, container := range describeTaskDefinitionOutput.TaskDefinition.ContainerDefinitions {
-						image := *container.Image
+					for _, service := range describeServicesOutput.Services {
 
-						logger.Debug("Found image used by ECS service",
-							"image", image, "ecsService", *service.ServiceName)
+						describeTaskDefinitionOutput, err :=
+							ecsClient.DescribeTaskDefinition(context.TODO(), &ecs.DescribeTaskDefinitionInput{
+								TaskDefinition: service.TaskDefinition,
+							})
+						if err != nil {
+							return gerrors.Wrapf(err, "cannot describe ECS task definitions")
+						}
 
-						imageSet[image] = struct{}{}
+						for _, container := range describeTaskDefinitionOutput.TaskDefinition.ContainerDefinitions {
+							image := *container.Image
+
+							logger.Debug("Found image used by ECS service",
+								"image", image, "ecsService", *service.ServiceName)
+
+							imageSet[image] = struct{}{}
+						}
 					}
+				} else {
+					logger.Debug("List services returned an empty result")
 				}
 			}
-
 		}
-
 	}
 
 	return nil
