@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
+	"github.com/aws/smithy-go/ptr"
 	boxaws "github.com/devopsbox-io/aws-ecr-cleaner/internal/pkg/aws"
 	gerrors "github.com/pkg/errors"
 	"strconv"
@@ -110,57 +111,140 @@ func (c *Cleaner) cleanSingleRepository(repository types.Repository, usedImagesS
 	return nil
 }
 
-func (c *Cleaner) processSingleImage(repository types.Repository, image types.ImageDetail, usedImagesSet map[string]struct{}, keepDays int, startTime time.Time) error {
+func (c *Cleaner) processSingleImage(
+	repository types.Repository,
+	image types.ImageDetail,
+	usedImagesSet map[string]struct{},
+	keepDays int,
+	startTime time.Time,
+) error {
+
 	imageAgeDays := startTime.Sub(*image.ImagePushedAt).Hours() / 24
 
 	if imageAgeDays > float64(keepDays) {
 
+		imageDigest := *image.ImageDigest
+
+		logger.Debug("Found old image", "repository", *repository.RepositoryUri, "imageAgeDays", imageAgeDays)
+
 		for _, imageTag := range image.ImageTags {
-			err := c.processSingleImageTag(repository, imageTag, usedImagesSet, imageAgeDays)
+			// capture range variables
+			imageTag := imageTag
+
+			err := c.processSingleImageReference(imageReference{
+				repositoryUri:  *repository.RepositoryUri,
+				repositoryName: *repository.RepositoryName,
+				digest:         imageDigest,
+				tag:            &imageTag,
+			}, usedImagesSet)
 			if err != nil {
 				return gerrors.Wrapf(err, "error processig %v image tag in repository %v", imageTag, *repository.RepositoryName)
 			}
 		}
-	}
-	return nil
-}
 
-func (c *Cleaner) processSingleImageTag(repository types.Repository, imageTag string, usedImagesSet map[string]struct{}, imageAgeDays float64) error {
+		if len(image.ImageTags) == 0 {
+			logger.Debug("Found untagged image", "imageDigest", imageDigest)
 
-	imageId := fmt.Sprintf("%v:%v", *repository.RepositoryUri, imageTag)
-
-	if _, ok := usedImagesSet[imageId]; ok {
-		logger.Info("Found old used image", "imageId", imageId, "imageAgeDays", imageAgeDays)
-	} else {
-		if c.config.DryRun {
-			logger.Info("Found unused image, should be removed",
-				"imageId", imageId, "imageAgeDays", imageAgeDays)
-		} else {
-			logger.Info("Found unused image, removing",
-				"imageId", imageId, "imageAgeDays", imageAgeDays)
-
-			err := c.deleteImage(repository, imageTag)
+			err := c.processSingleImageReference(imageReference{
+				repositoryUri:  *repository.RepositoryUri,
+				repositoryName: *repository.RepositoryName,
+				digest:         imageDigest,
+			}, usedImagesSet)
 			if err != nil {
-				return gerrors.Wrapf(err, "error deleting image %v", imageId)
+				return gerrors.Wrapf(err, "error processig %v image tag in repository %v", imageDigest, *repository.RepositoryName)
 			}
 		}
 	}
 	return nil
 }
 
-func (c *Cleaner) deleteImage(repository types.Repository, imageTag string) error {
+type imageReference struct {
+	repositoryUri  string
+	repositoryName string
+	digest         string
+	tag            *string
+}
+
+func (i imageReference) String() string {
+	if i.tag != nil {
+		return *i.tagId()
+	} else {
+		return i.digestId()
+	}
+}
+
+func (i imageReference) tagId() *string {
+	if i.tag != nil {
+		return ptr.String(fmt.Sprintf("%v:%v", i.repositoryUri, *i.tag))
+	} else {
+		return nil
+	}
+}
+
+func (i imageReference) digestId() string {
+	return fmt.Sprintf("%v@%v", i.repositoryUri, i.digest)
+}
+
+func (c *Cleaner) processSingleImageReference(reference imageReference, usedImagesSet map[string]struct{}) error {
+
+	if !isImageInUse(reference, usedImagesSet) {
+		if c.config.DryRun {
+			logger.Info("Found unused image, should be removed",
+				"imageReference", reference)
+		} else {
+			logger.Info("Found unused image, removing",
+				"imageReference", reference)
+
+			err := c.deleteImage(reference)
+			if err != nil {
+				return gerrors.Wrapf(err, "error deleting image %v", reference)
+			}
+		}
+	}
+	return nil
+}
+
+func isImageInUse(reference imageReference, usedImagesSet map[string]struct{}) bool {
+	imageTagId := reference.tagId()
+	imageDigestId := reference.digestId()
+
+	if imageTagId != nil {
+		if _, ok := usedImagesSet[*imageTagId]; ok {
+			logger.Info("Found old image in use", "imageId", *imageTagId)
+			return true
+		}
+	}
+
+	if _, ok := usedImagesSet[imageDigestId]; ok {
+		logger.Info("Found old image in use", "imageId", imageDigestId)
+		return true
+	}
+
+	return false
+}
+
+func (c *Cleaner) deleteImage(reference imageReference) error {
 	ecrClient := c.awsProvider.EcrClient
+
+	var imageIdentifier types.ImageIdentifier
+	if reference.tag != nil {
+		imageIdentifier = types.ImageIdentifier{
+			ImageTag: reference.tag,
+		}
+	} else {
+		imageIdentifier = types.ImageIdentifier{
+			ImageDigest: aws.String(reference.digest),
+		}
+	}
 
 	_, err := ecrClient.BatchDeleteImage(context.TODO(), &ecr.BatchDeleteImageInput{
 		ImageIds: []types.ImageIdentifier{
-			{
-				ImageTag: aws.String(imageTag),
-			},
+			imageIdentifier,
 		},
-		RepositoryName: repository.RepositoryName,
+		RepositoryName: aws.String(reference.repositoryName),
 	})
 	if err != nil {
-		return gerrors.Wrapf(err, "cannot remove image %v from repository %v", imageTag, *repository.RepositoryName)
+		return gerrors.Wrapf(err, "cannot remove image %v from repository", reference)
 	}
 	return nil
 }
