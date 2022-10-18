@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
+	"github.com/aws/smithy-go/ptr"
 	boxaws "github.com/devopsbox-io/aws-ecr-cleaner/internal/pkg/aws"
 	"github.com/golang/mock/gomock"
 	"testing"
@@ -22,7 +23,8 @@ func TestCleaner(t *testing.T) {
 
 	type deleteImageData struct {
 		repositoryName string
-		dockerTag      string
+		dockerTag      *string
+		digest         *string
 	}
 
 	tests := map[string]struct {
@@ -47,6 +49,7 @@ func TestCleaner(t *testing.T) {
 							images: [][]imageData{
 								{
 									{
+										digest: "v1Digest",
 										dockerTags: []string{
 											"v1",
 										},
@@ -61,7 +64,7 @@ func TestCleaner(t *testing.T) {
 			expected: []deleteImageData{
 				{
 					repositoryName: "repo1",
-					dockerTag:      "v1",
+					dockerTag:      ptr.String("v1"),
 				},
 			},
 		},
@@ -83,6 +86,7 @@ func TestCleaner(t *testing.T) {
 							images: [][]imageData{
 								{
 									{
+										digest: "v1Digest",
 										dockerTags: []string{
 											"v1",
 										},
@@ -116,6 +120,7 @@ func TestCleaner(t *testing.T) {
 							images: [][]imageData{
 								{
 									{
+										digest: "v1Digest",
 										dockerTags: []string{
 											"v1",
 										},
@@ -147,6 +152,7 @@ func TestCleaner(t *testing.T) {
 							images: [][]imageData{
 								{
 									{
+										digest: "v1Digest",
 										dockerTags: []string{
 											"v1",
 										},
@@ -178,6 +184,7 @@ func TestCleaner(t *testing.T) {
 							images: [][]imageData{
 								{
 									{
+										digest: "v1Digest",
 										dockerTags: []string{
 											"v1",
 										},
@@ -207,6 +214,7 @@ func TestCleaner(t *testing.T) {
 							images: [][]imageData{
 								{
 									{
+										digest: "v1Digest",
 										dockerTags: []string{
 											"v1",
 										},
@@ -239,6 +247,7 @@ func TestCleaner(t *testing.T) {
 							images: [][]imageData{
 								{
 									{
+										digest: "v1Digest",
 										dockerTags: []string{
 											"v1",
 										},
@@ -253,7 +262,7 @@ func TestCleaner(t *testing.T) {
 			expected: []deleteImageData{
 				{
 					repositoryName: "repo1",
-					dockerTag:      "v1",
+					dockerTag:      ptr.String("v1"),
 				},
 			},
 		},
@@ -275,6 +284,7 @@ func TestCleaner(t *testing.T) {
 							images: [][]imageData{
 								{
 									{
+										digest: "v1Digest",
 										dockerTags: []string{
 											"v1",
 										},
@@ -292,6 +302,7 @@ func TestCleaner(t *testing.T) {
 							images: [][]imageData{
 								{
 									{
+										digest: "v1Digest",
 										dockerTags: []string{
 											"v1",
 										},
@@ -311,6 +322,7 @@ func TestCleaner(t *testing.T) {
 							images: [][]imageData{
 								{
 									{
+										digest: "v1Digest",
 										dockerTags: []string{
 											"v1",
 										},
@@ -328,6 +340,7 @@ func TestCleaner(t *testing.T) {
 							images: [][]imageData{
 								{
 									{
+										digest: "v1Digest",
 										dockerTags: []string{
 											"v1",
 										},
@@ -336,12 +349,14 @@ func TestCleaner(t *testing.T) {
 								},
 								{
 									{
+										digest: "v2Digest",
 										dockerTags: []string{
 											"v2",
 										},
 										imagePushedAt: testTimeParse(t, "2022-08-01T00:00:00Z"),
 									},
 									{
+										digest: "v3v4Digest",
 										dockerTags: []string{
 											"v3",
 											"v4",
@@ -357,33 +372,132 @@ func TestCleaner(t *testing.T) {
 			expected: []deleteImageData{
 				{
 					repositoryName: "repo1",
-					dockerTag:      "v1",
+					dockerTag:      ptr.String("v1"),
 				},
 				{
 					repositoryName: "repo2",
-					dockerTag:      "v1",
+					dockerTag:      ptr.String("v1"),
 				},
 				{
 					repositoryName: "repo3",
-					dockerTag:      "v1",
+					dockerTag:      ptr.String("v1"),
 				},
 				{
 					repositoryName: "repo4",
-					dockerTag:      "v1",
+					dockerTag:      ptr.String("v1"),
 				},
 				{
 					repositoryName: "repo4",
-					dockerTag:      "v2",
+					dockerTag:      ptr.String("v2"),
 				},
 				{
 					repositoryName: "repo4",
-					dockerTag:      "v3",
+					dockerTag:      ptr.String("v3"),
 				},
 				{
 					repositoryName: "repo4",
-					dockerTag:      "v4",
+					dockerTag:      ptr.String("v4"),
 				},
 			},
+		},
+		"Image without tag": {
+			input: testData{
+				config: Config{
+					DryRun:          false,
+					DefaultKeepDays: 30,
+				},
+				usedImgs: map[string]struct{}{},
+				existingImages: [][]repositoryData{
+					{
+						{
+							name: "repo1",
+							uri:  "repo1uri",
+							tags: map[string]string{
+								"BoxCleanerEnabled": "true",
+							},
+							images: [][]imageData{
+								{
+									{
+										digest:        "imageDigest",
+										imagePushedAt: testTimeParse(t, "2022-08-01T00:00:00Z"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: []deleteImageData{
+				{
+					repositoryName: "repo1",
+					digest:         ptr.String("imageDigest"),
+				},
+			},
+		},
+		"Found untagged used image by digest": {
+			input: testData{
+				config: Config{
+					DryRun:          false,
+					DefaultKeepDays: 30,
+				},
+				usedImgs: map[string]struct{}{
+					"repo1uri@imageDigest": {},
+				},
+				existingImages: [][]repositoryData{
+					{
+						{
+							name: "repo1",
+							uri:  "repo1uri",
+							tags: map[string]string{
+								"BoxCleanerEnabled": "true",
+							},
+							images: [][]imageData{
+								{
+									{
+										digest:        "imageDigest",
+										imagePushedAt: testTimeParse(t, "2022-08-01T00:00:00Z"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: []deleteImageData{},
+		},
+		"Found tagged used image by digest": {
+			input: testData{
+				config: Config{
+					DryRun:          false,
+					DefaultKeepDays: 30,
+				},
+				usedImgs: map[string]struct{}{
+					"repo1uri@v1Digest": {},
+				},
+				existingImages: [][]repositoryData{
+					{
+						{
+							name: "repo1",
+							uri:  "repo1uri",
+							tags: map[string]string{
+								"BoxCleanerEnabled": "true",
+							},
+							images: [][]imageData{
+								{
+									{
+										digest: "v1Digest",
+										dockerTags: []string{
+											"v1",
+										},
+										imagePushedAt: testTimeParse(t, "2022-08-01T00:00:00Z"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: []deleteImageData{},
 		},
 	}
 
@@ -405,7 +519,8 @@ func TestCleaner(t *testing.T) {
 				mockAwsProvider.MockEcrClient.EXPECT().BatchDeleteImage(gomock.Any(), &ecr.BatchDeleteImageInput{
 					ImageIds: []types.ImageIdentifier{
 						{
-							ImageTag: aws.String(expectedDelete.dockerTag),
+							ImageTag:    expectedDelete.dockerTag,
+							ImageDigest: expectedDelete.digest,
 						},
 					},
 					RepositoryName: aws.String(expectedDelete.repositoryName),
@@ -424,6 +539,7 @@ func TestCleaner(t *testing.T) {
 }
 
 type imageData struct {
+	digest        string
 	dockerTags    []string
 	imagePushedAt time.Time
 }
@@ -482,6 +598,7 @@ func mockExistingImages(ctrl *gomock.Controller, mockAwsProvider *boxaws.MockPro
 					for j, image := range imagesPage {
 						ecrImages[j] = types.ImageDetail{
 							ImagePushedAt:  aws.Time(image.imagePushedAt),
+							ImageDigest:    aws.String(image.digest),
 							ImageTags:      image.dockerTags,
 							RepositoryName: aws.String(repoData.name),
 						}
