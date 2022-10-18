@@ -43,7 +43,7 @@ use `map[string]struct{}` to mitigate the risk.
 ECR cleaner is designed to be used as an AWS Lambda container image. The Lambda can be triggered by AWS EventBridge
 Schedule (we use `cron(0 0 * * ? *)`)
 
-You can use our docker image `ghcr.io/devopsbox-io/aws-ecr-cleaner:v0.1.0` (replace the tag with another version when
+You can use our docker image `ghcr.io/devopsbox-io/aws-ecr-cleaner:v0.2.0` (replace the tag with another version when
 appropriate) or build your own image downloading the binary in your Dockerfile (Set the `ECR_CLEANER_SHA256`
 and `ECR_CLEANER_VERSION` variables appropriately):
 
@@ -55,8 +55,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-ENV ECR_CLEANER_SHA256=2c713721af30c4c9380324816bd122f469f0780abc9f86fff62e375d45c61272 \
-    ECR_CLEANER_VERSION=0.1.0
+ENV ECR_CLEANER_SHA256=b2be75392eb7cb382cb9a4a9308b3026d248dd90b33bec6c54a53f1f3e4a5303 \
+    ECR_CLEANER_VERSION=0.2.0
 RUN curl -L https://github.com/devopsbox-io/aws-ecr-cleaner/releases/download/v${ECR_CLEANER_VERSION}/aws-ecr-cleaner-${ECR_CLEANER_VERSION}-linux-amd64 \
         -o /usr/local/bin/aws-ecr-cleaner && \
     echo "${ECR_CLEANER_SHA256} /usr/local/bin/aws-ecr-cleaner" | sha256sum --check && \
