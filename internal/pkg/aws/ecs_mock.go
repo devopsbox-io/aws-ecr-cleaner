@@ -136,6 +136,44 @@ func (mr *MockEcsPaginatorsMockRecorder) NewListServicesPaginator(params interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewListServicesPaginator", reflect.TypeOf((*MockEcsPaginators)(nil).NewListServicesPaginator), varargs...)
 }
 
+// NewListTaskDefinitionsPaginator mocks base method.
+func (m *MockEcsPaginators) NewListTaskDefinitionsPaginator(params *ecs.ListTaskDefinitionsInput, optFns ...func(*ecs.ListTaskDefinitionsPaginatorOptions)) EcsListTaskDefinitionsPaginator {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "NewListTaskDefinitionsPaginator", varargs...)
+	ret0, _ := ret[0].(EcsListTaskDefinitionsPaginator)
+	return ret0
+}
+
+// NewListTaskDefinitionsPaginator indicates an expected call of NewListTaskDefinitionsPaginator.
+func (mr *MockEcsPaginatorsMockRecorder) NewListTaskDefinitionsPaginator(params interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewListTaskDefinitionsPaginator", reflect.TypeOf((*MockEcsPaginators)(nil).NewListTaskDefinitionsPaginator), varargs...)
+}
+
+// NewListTaskDefinitionFamiliesPaginator mocks base method.
+func (m *MockEcsPaginators) NewListTaskDefinitionFamiliesPaginator(params *ecs.ListTaskDefinitionFamiliesInput, optFns ...func(*ecs.ListTaskDefinitionFamiliesPaginatorOptions)) EcsListTaskDefinitionFamiliesPaginator {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "NewListTaskDefinitionFamiliesPaginator", varargs...)
+	ret0, _ := ret[0].(EcsListTaskDefinitionFamiliesPaginator)
+	return ret0
+}
+
+// NewListTaskDefinitionFamiliesPaginator indicates an expected call of NewListTaskDefinitionFamiliesPaginator.
+func (mr *MockEcsPaginatorsMockRecorder) NewListTaskDefinitionFamiliesPaginator(params interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewListTaskDefinitionFamiliesPaginator", reflect.TypeOf((*MockEcsPaginators)(nil).NewListTaskDefinitionFamiliesPaginator), varargs...)
+}
+
 // MockEcsListClustersPaginator is a mock of EcsListClustersPaginator interface.
 type MockEcsListClustersPaginator struct {
 	ctrl     *gomock.Controller
@@ -248,4 +286,120 @@ func (mr *MockEcsListServicesPaginatorMockRecorder) NextPage(ctx interface{}, op
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx}, optFns...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NextPage", reflect.TypeOf((*MockEcsListServicesPaginator)(nil).NextPage), varargs...)
+}
+
+
+// MockEcsListTaskDefinitionsPaginator is a mock of EcsListTaskDefinitionsPaginator interface.
+type MockEcsListTaskDefinitionsPaginator struct {
+	ctrl     *gomock.Controller
+	recorder *MockEcsListTaskDefinitionsPaginatorMockRecorder
+}
+
+// MockEcsListTaskDefinitionsPaginatorMockRecorder is the mock recorder for MockEcsListTaskDefinitionsPaginator.
+type MockEcsListTaskDefinitionsPaginatorMockRecorder struct {
+	mock *MockEcsListTaskDefinitionsPaginator
+}
+
+// NewMockEcsListTaskDefinitionsPaginator creates a new mock instance.
+func NewMockEcsListTaskDefinitionsPaginator(ctrl *gomock.Controller) *MockEcsListTaskDefinitionsPaginator {
+	mock := &MockEcsListTaskDefinitionsPaginator{ctrl: ctrl}
+	mock.recorder = &MockEcsListTaskDefinitionsPaginatorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockEcsListTaskDefinitionsPaginator) EXPECT() *MockEcsListTaskDefinitionsPaginatorMockRecorder {
+	return m.recorder
+}
+
+// HasMorePages mocks base method.
+func (m *MockEcsListTaskDefinitionsPaginator) HasMorePages() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasMorePages")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// HasMorePages indicates an expected call of HasMorePages.
+func (mr *MockEcsListTaskDefinitionsPaginatorMockRecorder) HasMorePages() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasMorePages", reflect.TypeOf((*MockEcsListTaskDefinitionsPaginator)(nil).HasMorePages))
+}
+
+// NextPage mocks base method.
+func (m *MockEcsListTaskDefinitionsPaginator) NextPage(ctx context.Context, optFns ...func(*ecs.Options)) (*ecs.ListTaskDefinitionsOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "NextPage", varargs...)
+	ret0, _ := ret[0].(*ecs.ListTaskDefinitionsOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NextPage indicates an expected call of NextPage.
+func (mr *MockEcsListTaskDefinitionsPaginatorMockRecorder) NextPage(ctx interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NextPage", reflect.TypeOf((*MockEcsListTaskDefinitionsPaginator)(nil).NextPage), varargs...)
+}
+
+
+// MockEcsListTaskDefinitionFamiliesPaginator is a mock of EcsListTaskDefinitionFamiliesPaginator interface.
+type MockEcsListTaskDefinitionFamiliesPaginator struct {
+	ctrl     *gomock.Controller
+	recorder *MockEcsListTaskDefinitionFamiliesPaginatorMockRecorder
+}
+
+// MockEcsListTaskDefinitionFamiliesPaginatorMockRecorder is the mock recorder for MockEcsListTaskDefinitionFamiliesPaginator.
+type MockEcsListTaskDefinitionFamiliesPaginatorMockRecorder struct {
+	mock *MockEcsListTaskDefinitionFamiliesPaginator
+}
+
+// NewMockEcsListTaskDefinitionFamiliesPaginator creates a new mock instance.
+func NewMockEcsListTaskDefinitionFamiliesPaginator(ctrl *gomock.Controller) *MockEcsListTaskDefinitionFamiliesPaginator {
+	mock := &MockEcsListTaskDefinitionFamiliesPaginator{ctrl: ctrl}
+	mock.recorder = &MockEcsListTaskDefinitionFamiliesPaginatorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockEcsListTaskDefinitionFamiliesPaginator) EXPECT() *MockEcsListTaskDefinitionFamiliesPaginatorMockRecorder {
+	return m.recorder
+}
+
+// HasMorePages mocks base method.
+func (m *MockEcsListTaskDefinitionFamiliesPaginator) HasMorePages() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasMorePages")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// HasMorePages indicates an expected call of HasMorePages.
+func (mr *MockEcsListTaskDefinitionFamiliesPaginatorMockRecorder) HasMorePages() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasMorePages", reflect.TypeOf((*MockEcsListTaskDefinitionFamiliesPaginator)(nil).HasMorePages))
+}
+
+// NextPage mocks base method.
+func (m *MockEcsListTaskDefinitionFamiliesPaginator) NextPage(ctx context.Context, optFns ...func(*ecs.Options)) (*ecs.ListTaskDefinitionFamiliesOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "NextPage", varargs...)
+	ret0, _ := ret[0].(*ecs.ListTaskDefinitionFamiliesOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NextPage indicates an expected call of NextPage.
+func (mr *MockEcsListTaskDefinitionFamiliesPaginatorMockRecorder) NextPage(ctx interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NextPage", reflect.TypeOf((*MockEcsListTaskDefinitionFamiliesPaginator)(nil).NextPage), varargs...)
 }

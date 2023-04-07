@@ -108,6 +108,46 @@ func (u *usedImages) getEcsUsedImages(imageSet map[string]struct{}) error {
 		}
 	}
 
+	listTaskDefinitionFamiliesPaginator := ecsPaginators.NewListTaskDefinitionFamiliesPaginator(&ecs.ListTaskDefinitionFamiliesInput{})
+	for listTaskDefinitionFamiliesPaginator.HasMorePages() {
+		listTaskDefinitionFamiliesPage, err := listTaskDefinitionFamiliesPaginator.NextPage(context.TODO())
+		if err != nil {
+			return gerrors.Wrapf(err, "cannot get list ECS task definition families page")
+		}
+
+		for _, taskDefinitionFamily := range listTaskDefinitionFamiliesPage.Families {
+			listTaskDefinitionsPaginator := ecsPaginators.NewListTaskDefinitionsPaginator(&ecs.ListTaskDefinitionsInput{
+				FamilyPrefix: aws.String(taskDefinitionFamily),
+				MaxResults:   aws.Int32(2),
+				Sort:         "DESC",
+			})
+			listTaskDefinitionsPage, err := listTaskDefinitionsPaginator.NextPage(context.TODO())
+			if err != nil {
+				return gerrors.Wrapf(err, "cannot get list ECS task definitions page")
+			}
+
+			for _, taskDefinitionArn := range listTaskDefinitionsPage.TaskDefinitionArns {
+				describeTaskDefinitionOutput, err :=
+					ecsClient.DescribeTaskDefinition(context.TODO(), &ecs.DescribeTaskDefinitionInput{
+						TaskDefinition: aws.String(taskDefinitionArn),
+					})
+				if err != nil {
+					return gerrors.Wrapf(err, "cannot describe ECS task definitions")
+				}
+
+				for _, container := range describeTaskDefinitionOutput.TaskDefinition.ContainerDefinitions {
+					image := *container.Image
+
+					logger.Debug("Found image used by ECS task definition",
+						"image", image, "ecsTaskDefinition", taskDefinitionArn)
+
+					imageSet[image] = struct{}{}
+				}
+
+			}
+		}
+	}
+
 	return nil
 }
 
